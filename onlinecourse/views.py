@@ -21,20 +21,45 @@ def submit(request, course_id):
     return HttpResponseRedirect(reverse(viewname='onlinecourse:exam_result', args=(course_id, submission_id,)))
 
 
+```python
 def show_exam_result(request, course_id, submission_id):
-    context = {}
+
     course = get_object_or_404(Course, pk=course_id)
     submission = Submission.objects.get(id=submission_id)
-    choices = submission.choices.all()
-    total_score = 0
-    for choice in choices:
-        if choice.is_correct:
-            total_score += choice.question.grade
-    context['course'] = course
-    context['grade'] = total_score
-    context['choices'] = choices
 
-    return render(request, 'onlinecourse/exam_result_bootstrap.html', context)
+    choices = submission.choices.all()
+
+    total_score = 0
+    possible_score = 0
+
+    for question in course.question_set.all():
+
+        possible_score += question.grade
+
+        submitted_answer_ids = []
+
+        for choice in choices:
+            if choice.question.id == question.id:
+                submitted_answer_ids.append(choice.id)
+
+        if question.is_get_score(submitted_answer_ids):
+            total_score += question.grade
+
+    context = {
+        'course': course,
+        'submission': submission,
+        'choices': choices,
+        'grade': total_score,
+        'possible_score': possible_score,
+    }
+
+    return render(
+        request,
+        'onlinecourse/exam_result_bootstrap.html',
+        context
+    )
+```
+
     
 
 def registration_request(request):
